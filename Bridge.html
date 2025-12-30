@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>도형 렌더링 시스템 - Bridge 패턴</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .analogy {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            margin-top: 15px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .analogy strong {
+            color: #667eea;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .panel-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+            color: #333;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .info-box p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .code-block {
+            background: #2d2d44;
+            color: #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .demo-section {
+            margin-top: 20px;
+        }
+
+        .controls-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .shape-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .shape-option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .shape-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .shape-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .renderer-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .renderer-option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .renderer-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .renderer-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .renderer-option .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .renderer-option .name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .renderer-option .description {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .canvas-container {
+            background: #f8f9fa;
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 400px;
+            position: relative;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            background: white;
+            display: block;
+        }
+
+        .render-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff9e6;
+            border-radius: 8px;
+            border: 2px dashed #ffc107;
+        }
+
+        .render-info h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .render-info pre {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+
+        .bridge-flow {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px dashed #4caf50;
+        }
+
+        .bridge-flow h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .flow-step .arrow {
+            margin: 0 10px;
+            color: #667eea;
+            font-size: 20px;
+        }
+
+        .flow-step .step-box {
+            background: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: #333;
+            box-shadow: 0 0 0 3px white, 0 0 0 5px #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 도형 렌더링 시스템</h1>
+            <p class="subtitle">Bridge 패턴을 활용한 추상화와 구현의 분리</p>
+            <div class="analogy">
+                <strong>브리지 패턴의 핵심:</strong><br>
+                도형(추상화)과 렌더링 방식(구현)을 독립적으로 분리합니다. 
+                새로운 도형을 추가해도 렌더링 방식을 수정할 필요가 없고, 
+                새로운 렌더링 방식을 추가해도 도형 코드를 수정할 필요가 없습니다. 
+                이 둘은 브리지로 연결되어 자유롭게 조합됩니다.
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="sidebar">
+                <h2 class="panel-title">📚 Bridge 패턴 설명</h2>
+                
+                <div class="info-box">
+                    <h3>패턴 개요</h3>
+                    <p>Bridge 패턴은 추상화와 구현을 분리하여 독립적으로 변경할 수 있도록 하는 구조 패턴입니다. 
+                    상속 대신 조합을 사용하여 더 유연한 설계를 가능하게 합니다.</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>핵심 구성요소</h3>
+                    <p>• <strong>Abstraction (추상화):</strong> 고수준 제어 로직 (도형)<br>
+                    • <strong>Implementation (구현):</strong> 저수준 플랫폼별 구현 (렌더러)<br>
+                    • <strong>Bridge:</strong> 추상화가 구현을 참조하는 연결고리</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>적용 사례</h3>
+                    <p>• 플랫폼 독립적인 UI 프레임워크<br>
+                    • 데이터베이스 드라이버<br>
+                    • 디바이스 드라이버<br>
+                    • <strong>다양한 렌더링 엔진 지원</strong> ← 현재 예제</p>
+                </div>
+
+                <div class="code-block">
+// 추상화 (Abstraction)
+class Shape {
+    constructor(renderer) {
+        this.renderer = renderer; // Bridge
+    }
+    draw() { throw new Error('Must implement'); }
+}
+
+// 구현 (Implementation)
+class Renderer {
+    renderCircle() { throw new Error('Must implement'); }
+    renderSquare() { throw new Error('Must implement'); }
+}
+
+// 구체 추상화
+class Circle extends Shape {
+    draw() {
+        this.renderer.renderCircle(); // 구현 위임
+    }
+}
+
+// 구체 구현
+class CanvasRenderer extends Renderer {
+    renderCircle() {
+        // Canvas API로 원 그리기
+    }
+}
+                </div>
+            </div>
+
+            <div class="main-content">
+                <h2 class="panel-title">💻 도형 렌더링 데모</h2>
+                
+                <div class="demo-section">
+                    <div class="controls-panel">
+                        <div class="control-group">
+                            <label>도형 선택 (Abstraction)</label>
+                            <div class="shape-selector" id="shapeSelector"></div>
+                        </div>
+
+                        <div class="control-group">
+                            <label>렌더링 엔진 선택 (Implementation)</label>
+                            <div class="renderer-selector" id="rendererSelector"></div>
+                        </div>
+
+                        <div class="control-group">
+                            <label>색상 선택</label>
+                            <div class="color-picker" id="colorPicker"></div>
+                        </div>
+                    </div>
+
+                    <div class="canvas-container">
+                        <canvas id="renderCanvas"></canvas>
+                    </div>
+
+                    <div class="render-info" id="renderInfo" style="display: none;">
+                        <h3>🔄 렌더링 정보</h3>
+                        <pre id="renderInfoContent"></pre>
+                    </div>
+
+                    <div class="bridge-flow" id="bridgeFlow" style="display: none;">
+                        <h3>🌉 Bridge 패턴 흐름</h3>
+                        <div id="flowSteps"></div>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalRenders">0</div>
+                            <div class="stat-label">총 렌더링 횟수</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="currentShape">-</div>
+                            <div class="stat-label">현재 도형</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="currentRenderer">-</div>
+                            <div class="stat-label">현재 렌더러</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // Bridge 패턴 구현
+        // 추상화(도형)와 구현(렌더러)을 분리
+        // ============================================
+
+        // ========== Implementation: 렌더러 인터페이스 ==========
+        
+        class Renderer {
+            renderCircle(x, y, radius, color) {
+                throw new Error('renderCircle() must be implemented');
+            }
+            
+            renderSquare(x, y, size, color) {
+                throw new Error('renderSquare() must be implemented');
+            }
+            
+            renderTriangle(x, y, size, color) {
+                throw new Error('renderTriangle() must be implemented');
+            }
+            
+            getName() {
+                throw new Error('getName() must be implemented');
+            }
+            
+            clear() {
+                throw new Error('clear() must be implemented');
+            }
+        }
+
+        // ========== 구체 Implementation: Canvas 렌더러 ==========
+        
+        class CanvasRenderer extends Renderer {
+            constructor(canvas) {
+                super();
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+            }
+            
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+            
+            renderCircle(x, y, radius, color) {
+                this.ctx.fillStyle = color;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+            
+            renderSquare(x, y, size, color) {
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(x - size/2, y - size/2, size, size);
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(x - size/2, y - size/2, size, size);
+            }
+            
+            renderTriangle(x, y, size, color) {
+                this.ctx.fillStyle = color;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y - size/2);
+                this.ctx.lineTo(x - size/2, y + size/2);
+                this.ctx.lineTo(x + size/2, y + size/2);
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+            
+            getName() {
+                return 'Canvas 2D';
+            }
+        }
+
+        // ========== 구체 Implementation: SVG 렌더러 ==========
+        
+        class SVGRenderer extends Renderer {
+            constructor(canvas) {
+                super();
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                // SVG 스타일로 렌더링 (실제로는 Canvas로 SVG처럼 그리기)
+            }
+            
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+            
+            renderCircle(x, y, radius, color) {
+                // SVG 스타일: 부드러운 그라데이션
+                const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, radius);
+                gradient.addColorStop(0, this.lightenColor(color, 0.3));
+                gradient.addColorStop(1, color);
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 1;
+                this.ctx.stroke();
+            }
+            
+            renderSquare(x, y, size, color) {
+                // SVG 스타일: 그림자 효과
+                this.ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowOffsetX = 3;
+                this.ctx.shadowOffsetY = 3;
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(x - size/2, y - size/2, size, size);
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(x - size/2, y - size/2, size, size);
+            }
+            
+            renderTriangle(x, y, size, color) {
+                // SVG 스타일: 그라데이션
+                const gradient = this.ctx.createLinearGradient(x, y - size/2, x, y + size/2);
+                gradient.addColorStop(0, this.lightenColor(color, 0.2));
+                gradient.addColorStop(1, color);
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y - size/2);
+                this.ctx.lineTo(x - size/2, y + size/2);
+                this.ctx.lineTo(x + size/2, y + size/2);
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 1;
+                this.ctx.stroke();
+            }
+            
+            lightenColor(color, amount) {
+                const hex = color.replace('#', '');
+                const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + amount * 255);
+                const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + amount * 255);
+                const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + amount * 255);
+                return `rgb(${r},${g},${b})`;
+            }
+            
+            getName() {
+                return 'SVG Style';
+            }
+        }
+
+        // ========== 구체 Implementation: WebGL 스타일 렌더러 ==========
+        
+        class WebGLStyleRenderer extends Renderer {
+            constructor(canvas) {
+                super();
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+            }
+            
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                // WebGL 스타일: 어두운 배경
+                this.ctx.fillStyle = '#1a1a2e';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+            
+            renderCircle(x, y, radius, color) {
+                // WebGL 스타일: 발광 효과
+                this.ctx.shadowColor = color;
+                this.ctx.shadowBlur = 20;
+                this.ctx.fillStyle = color;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+            
+            renderSquare(x, y, size, color) {
+                // WebGL 스타일: 발광 효과
+                this.ctx.shadowColor = color;
+                this.ctx.shadowBlur = 20;
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(x - size/2, y - size/2, size, size);
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(x - size/2, y - size/2, size, size);
+            }
+            
+            renderTriangle(x, y, size, color) {
+                // WebGL 스타일: 발광 효과
+                this.ctx.shadowColor = color;
+                this.ctx.shadowBlur = 20;
+                this.ctx.fillStyle = color;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y - size/2);
+                this.ctx.lineTo(x - size/2, y + size/2);
+                this.ctx.lineTo(x + size/2, y + size/2);
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+            
+            getName() {
+                return 'WebGL Style';
+            }
+        }
+
+        // ========== Abstraction: 도형 추상 클래스 ==========
+        
+        class Shape {
+            constructor(renderer, color) {
+                this.renderer = renderer; // Bridge: 구현에 대한 참조
+                this.color = color || '#667eea';
+            }
+            
+            draw() {
+                throw new Error('draw() must be implemented');
+            }
+            
+            setRenderer(renderer) {
+                this.renderer = renderer;
+            }
+            
+            setColor(color) {
+                this.color = color;
+            }
+            
+            getName() {
+                throw new Error('getName() must be implemented');
+            }
+        }
+
+        // ========== 구체 Abstraction: 원 ==========
+        
+        class Circle extends Shape {
+            constructor(renderer, color) {
+                super(renderer, color);
+                this.radius = 80;
+            }
+            
+            draw(x, y) {
+                // 구현에 위임: Bridge를 통해 렌더러 호출
+                this.renderer.renderCircle(x, y, this.radius, this.color);
+            }
+            
+            getName() {
+                return '원 (Circle)';
+            }
+        }
+
+        // ========== 구체 Abstraction: 사각형 ==========
+        
+        class Square extends Shape {
+            constructor(renderer, color) {
+                super(renderer, color);
+                this.size = 120;
+            }
+            
+            draw(x, y) {
+                // 구현에 위임: Bridge를 통해 렌더러 호출
+                this.renderer.renderSquare(x, y, this.size, this.color);
+            }
+            
+            getName() {
+                return '사각형 (Square)';
+            }
+        }
+
+        // ========== 구체 Abstraction: 삼각형 ==========
+        
+        class Triangle extends Shape {
+            constructor(renderer, color) {
+                super(renderer, color);
+                this.size = 120;
+            }
+            
+            draw(x, y) {
+                // 구현에 위임: Bridge를 통해 렌더러 호출
+                this.renderer.renderTriangle(x, y, this.size, this.color);
+            }
+            
+            getName() {
+                return '삼각형 (Triangle)';
+            }
+        }
+
+        // ========== 클라이언트 코드 ==========
+        
+        class ShapeRendererApp {
+            constructor() {
+                this.canvas = document.getElementById('renderCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.setupCanvas();
+                
+                // 렌더러들 (Implementation)
+                this.renderers = [
+                    new CanvasRenderer(this.canvas),
+                    new SVGRenderer(this.canvas),
+                    new WebGLStyleRenderer(this.canvas)
+                ];
+                
+                // 도형들 (Abstraction)
+                this.shapes = [
+                    new Circle(this.renderers[0], '#667eea'),
+                    new Square(this.renderers[0], '#667eea'),
+                    new Triangle(this.renderers[0], '#667eea')
+                ];
+                
+                this.currentShape = this.shapes[0];
+                this.currentRenderer = this.renderers[0];
+                this.currentColor = '#667eea';
+                this.totalRenders = 0;
+                
+                this.colors = [
+                    { name: '보라', value: '#667eea' },
+                    { name: '빨강', value: '#ef4444' },
+                    { name: '파랑', value: '#3b82f6' },
+                    { name: '초록', value: '#10b981' },
+                    { name: '노랑', value: '#f59e0b' },
+                    { name: '핑크', value: '#ec4899' }
+                ];
+                
+                this.init();
+            }
+            
+            setupCanvas() {
+                this.canvas.width = this.canvas.offsetWidth;
+                this.canvas.height = 400;
+            }
+            
+            init() {
+                this.renderShapes();
+                this.renderRenderers();
+                this.renderColors();
+                this.render();
+                this.setupEventListeners();
+            }
+            
+            renderShapes() {
+                const container = document.getElementById('shapeSelector');
+                container.innerHTML = '';
+                
+                const shapeConfigs = [
+                    { shape: this.shapes[0], icon: '⭕', name: '원' },
+                    { shape: this.shapes[1], icon: '⬜', name: '사각형' },
+                    { shape: this.shapes[2], icon: '🔺', name: '삼각형' }
+                ];
+                
+                shapeConfigs.forEach((config, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'shape-option' + (index === 0 ? ' selected' : '');
+                    option.innerHTML = `
+                        <div style="font-size: 32px; margin-bottom: 8px;">${config.icon}</div>
+                        <div style="font-weight: 600; font-size: 14px;">${config.name}</div>
+                    `;
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('selected'));
+                        option.classList.add('selected');
+                        this.currentShape = config.shape;
+                        this.currentShape.setRenderer(this.currentRenderer);
+                        this.currentShape.setColor(this.currentColor);
+                        this.render();
+                    });
+                    container.appendChild(option);
+                });
+            }
+            
+            renderRenderers() {
+                const container = document.getElementById('rendererSelector');
+                container.innerHTML = '';
+                
+                const rendererConfigs = [
+                    { renderer: this.renderers[0], icon: '🖼️', name: 'Canvas 2D', desc: '기본 Canvas API' },
+                    { renderer: this.renderers[1], icon: '📐', name: 'SVG Style', desc: '부드러운 그라데이션' },
+                    { renderer: this.renderers[2], icon: '✨', name: 'WebGL Style', desc: '발광 효과' }
+                ];
+                
+                rendererConfigs.forEach((config, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'renderer-option' + (index === 0 ? ' selected' : '');
+                    option.innerHTML = `
+                        <div class="icon">${config.icon}</div>
+                        <div class="name">${config.name}</div>
+                        <div class="description">${config.desc}</div>
+                    `;
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.renderer-option').forEach(o => o.classList.remove('selected'));
+                        option.classList.add('selected');
+                        this.currentRenderer = config.renderer;
+                        this.currentShape.setRenderer(this.currentRenderer);
+                        this.render();
+                    });
+                    container.appendChild(option);
+                });
+            }
+            
+            renderColors() {
+                const container = document.getElementById('colorPicker');
+                container.innerHTML = '';
+                
+                this.colors.forEach((color, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'color-option' + (index === 0 ? ' selected' : '');
+                    option.style.backgroundColor = color.value;
+                    option.title = color.name;
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                        option.classList.add('selected');
+                        this.currentColor = color.value;
+                        this.currentShape.setColor(this.currentColor);
+                        this.render();
+                    });
+                    container.appendChild(option);
+                });
+            }
+            
+            render() {
+                this.currentRenderer.clear();
+                
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                this.currentShape.draw(centerX, centerY);
+                
+                this.totalRenders++;
+                this.updateStats();
+                this.showBridgeFlow();
+                this.showRenderInfo();
+            }
+            
+            showBridgeFlow() {
+                const flowPanel = document.getElementById('bridgeFlow');
+                const flowSteps = document.getElementById('flowSteps');
+                flowPanel.style.display = 'block';
+                
+                flowSteps.innerHTML = `
+                    <div class="flow-step">
+                        <div class="step-box">${this.currentShape.getName()}<br/>(Abstraction)</div>
+                        <span class="arrow">→</span>
+                        <div class="step-box">Bridge<br/>(renderer 참조)</div>
+                        <span class="arrow">→</span>
+                        <div class="step-box">${this.currentRenderer.getName()}<br/>(Implementation)</div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        도형과 렌더러가 독립적으로 변경 가능합니다!
+                    </div>
+                `;
+            }
+            
+            showRenderInfo() {
+                const infoPanel = document.getElementById('renderInfo');
+                const infoContent = document.getElementById('renderInfoContent');
+                infoPanel.style.display = 'block';
+                
+                infoContent.textContent = JSON.stringify({
+                    도형: this.currentShape.getName(),
+                    렌더러: this.currentRenderer.getName(),
+                    색상: this.currentColor,
+                    렌더링_방식: 'Bridge 패턴을 통해 추상화가 구현에 위임',
+                    독립성: '도형과 렌더러는 서로 독립적으로 변경 가능'
+                }, null, 2);
+            }
+            
+            updateStats() {
+                document.getElementById('totalRenders').textContent = this.totalRenders;
+                document.getElementById('currentShape').textContent = this.currentShape.getName().split(' ')[0];
+                document.getElementById('currentRenderer').textContent = this.currentRenderer.getName();
+            }
+            
+            setupEventListeners() {
+                window.addEventListener('resize', () => {
+                    this.setupCanvas();
+                    this.render();
+                });
+            }
+        }
+
+        // 애플리케이션 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new ShapeRendererApp();
+            
+            // 콘솔에 패턴 설명 출력
+            console.log('=== Bridge 패턴 구조 ===');
+            console.log('Abstraction (추상화): Shape, Circle, Square, Triangle');
+            console.log('Implementation (구현): Renderer, CanvasRenderer, SVGRenderer, WebGLStyleRenderer');
+            console.log('Bridge: Shape가 Renderer를 참조하여 구현에 위임');
+            console.log('\n도형과 렌더러는 독립적으로 변경 가능합니다!');
+        });
+    </script>
+</body>
+</html>
+
